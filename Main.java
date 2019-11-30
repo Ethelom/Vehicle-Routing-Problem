@@ -10,13 +10,15 @@ public class Main {
 	private static Node depot;
 	
 	public static void main(String args[]) {
-		ArrayList<Node> allNodes = CreateAllNodesAndServicePointLists();
-		DistanceOfNodes(allNodes);
-		totalTrucks = new ArrayList<Truck>();
-		CalculateTimes();
+		Main m = new Main();
+		ArrayList<Node> allNodes = m.CreateAllNodesAndServicePointLists();
+		m.DistanceOfNodes(allNodes);
+		m.totalTrucks = new ArrayList<Truck>();
+		m.CalculateTimes();
+		
 	}
 	
-	private static void CalculateTimes() {
+	private void CalculateTimes() {
 		times = new double[allNodes.size()][allNodes.size()];
 		for (int i = 0; i< distance.length; i++) {
 			for (int j = 0; j< distance.length; j++) {
@@ -26,7 +28,7 @@ public class Main {
 		
 	}
 
-	public static void DistanceOfNodes(ArrayList<Node> allNodes) {
+	public void DistanceOfNodes(ArrayList<Node> allNodes) {
 		distance = new double[allNodes.size()][allNodes.size()];
 		 for (int i = 0 ; i < allNodes.size(); i++)
 	        {
@@ -44,7 +46,7 @@ public class Main {
 	            }
 	        }	
 		 }
-	public static ArrayList<Node> CreateAllNodesAndServicePointLists() {     
+	public ArrayList<Node> CreateAllNodesAndServicePointLists() {     
 		//Create the list with the service points         
 		servicePoints = new ArrayList<Node>();         
 		Random ran = new Random(1);         
