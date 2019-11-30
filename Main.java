@@ -1,4 +1,5 @@
 
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,8 +32,7 @@ public class Main {
 			int d = nd1.demand;
 			demand[i] = d;
 		}
-		Arrays.sort(demand);
-		Collections.reverse(Arrays.asList(demand));
+		
 		return demand;
 			
 	}
@@ -63,7 +63,7 @@ public class Main {
 							belongtotruck[i] = truckid;
 							tr.time = tr.time + distance[position][position]/35 + 0.25;
 							customers[position] = true;
-							demandDone[i] = false;
+							demandDone[position] = false;
 						}
 					}
 				}
@@ -80,7 +80,7 @@ public class Main {
 								belongtotruck[i] = truckid; 
 								tr.time = tr.time + distance[position][position]/35 + 0.25;
 								customers[position] = true;
-								demandDone[i] = false;
+								demandDone[position] = false;
 							}
 						}
 					}
@@ -169,5 +169,3 @@ public class Main {
         }
 	}
 }
-
-
