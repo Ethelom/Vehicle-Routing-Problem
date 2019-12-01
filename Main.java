@@ -11,14 +11,68 @@ public class Main {
 	
 	public static void main(String args[]) {
 		Main m = new Main();
-		ArrayList<Node> allNodes = m.CreateAllNodesAndServicePointLists();
-		m.DistanceOfNodes(allNodes);
-		m.totalTrucks = new ArrayList<Truck>();
-		m.CalculateTimes();
-		
+		ArrayList<Node> allNodes = m.createAllNodesAndServicePointLists();
+		m.distanceOfNodes(allNodes);
+		m.calculateTimes();
+		m.createTrucks();
+		m.applyVRP();
+		System.out.println(m.findLongestPath());
 	}
 	
-	private void CalculateTimes() {
+	private double findLongestPath() {
+		double longestTime = Double.MIN_VALUE;
+		Truck truck = null;
+		for (int i =0 ; i < 25; i++) {
+			if (totalTrucks.get(i).getTotalTime() > longestTime) {
+				longestTime = totalTrucks.get(i).getTotalTime();
+				truck = totalTrucks.get(i);
+			}
+		}
+		return longestTime;
+	}
+	
+	private void applyVRP() {
+		
+        for (int i = 0; i < servicePoints.size(); i++) {
+            	double bestTimeForTruck = Double.MAX_VALUE;
+                int solutionInsertionPoint = -1;
+                int positionInTrucks = -1; 
+            	for (int p = 0 ; p < 25; p++) {
+            		Node candidate = servicePoints.get(i);
+            		ArrayList<Node> nodeSequence  = totalTrucks.get(p).getRoute();
+            		if (candidate.isRouted() == false) {
+            			for (int k = 0; k < nodeSequence.size() -1; k++)
+            			{
+            				Node A = nodeSequence.get(k);
+            				Node B = nodeSequence.get(k + 1);
+            				double trialTime = times[A.getID()][candidate.getID()] 
+                        		+ times[candidate.getID()][B.getID()] - times[A.getID()][B.getID()];
+            				if (trialTime < bestTimeForTruck && totalTrucks.get(p).addToTruck(servicePoints.get(i).getDemand())) {
+            					bestTimeForTruck = trialTime;
+            	                solutionInsertionPoint = k;
+            	                positionInTrucks = p;
+            				}
+                        }
+            		}
+            	}
+            	Node insertedNode = servicePoints.get(i);
+            	totalTrucks.get(positionInTrucks).addToRoute(insertedNode, bestTimeForTruck, solutionInsertionPoint);
+            }
+    }
+	private void createTrucks() {
+		totalTrucks = new ArrayList<Truck>();
+		Truck t = new Truck(1);
+		t.addToRoute(depot,0);
+		t.addToRoute(depot,0);
+		totalTrucks.add(t);
+		for (int i = 1; i < 25; i++) {
+			t = new Truck(i + 1);
+			t.addToRoute(depot,0);
+			t.addToRoute(depot,0);
+			totalTrucks.add(t);
+		}
+	}
+	private void calculateTimes() {
 		times = new double[allNodes.size()][allNodes.size()];
 		for (int i = 0; i< distance.length; i++) {
 			for (int j = 0; j< distance.length; j++) {
@@ -28,7 +82,7 @@ public class Main {
 		
 	}
 
-	public void DistanceOfNodes(ArrayList<Node> allNodes) {
+	public void distanceOfNodes(ArrayList<Node> allNodes) {
 		distance = new double[allNodes.size()][allNodes.size()];
 		 for (int i = 0 ; i < allNodes.size(); i++)
 	        {
@@ -46,7 +100,7 @@ public class Main {
 	            }
 	        }	
 		 }
-	public ArrayList<Node> CreateAllNodesAndServicePointLists() {     
+	public ArrayList<Node> createAllNodesAndServicePointLists() {     
 		//Create the list with the service points         
 		servicePoints = new ArrayList<Node>();         
 		Random ran = new Random(1);         

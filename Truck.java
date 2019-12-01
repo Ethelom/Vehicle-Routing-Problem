@@ -3,8 +3,8 @@ import java.util.ArrayList;
 public class Truck {
 	private int space = 3000;
 	private int speed = 35;
-	private ArrayList<Node> route;
-	private ArrayList<Double> routeTimes;
+	private ArrayList<Node> route = new ArrayList<Node>();
+	private ArrayList<Double> routeTimes = new ArrayList<Double>();
 	private int truckID;
 	private double totalTime = 0;
 	
@@ -59,16 +59,21 @@ public class Truck {
 	public Truck(int truckID) {
 		 this.truckID = truckID;
 	}
-	 
-	public void addToRoute(Node node, double distance) {
+	public void addToRoute(Node node, double time) {
 		route.add(node);
-		routeTimes.add(distance / speed + node.getServiceTime() + totalTime);
-		totalTime = totalTime + distance / speed + node.getServiceTime();
+		routeTimes.add(time);
+		totalTime = totalTime + time + node.getServiceTime();
+		this.space = this.space - node.getDemand();
+	} 
+	public void addToRoute(Node node, double time, int positionInRoute) {
+		route.add(positionInRoute + 1, node);
+		routeTimes.add(time);
+		totalTime = totalTime + time + node.getServiceTime();
+		this.space = this.space - node.getDemand();
 	}
 	
 	public boolean addToTruck(int demand) {
-		if (this.space - demand >= 0) {
-			this.space = this.space - demand;//we will have checked in main if enough space is available
+		if (this.space - demand >= 0) {//we will have checked in main if enough space is available
 			return true;
 		}
 		return false;
