@@ -137,16 +137,15 @@ public class VehicleRoutingProblem {
                     potentialNodes.add(findMinUnservicedPoint(r));
                 }
             } while(potentialNodes.contains(null));
-            	Pair<Route, Node> winningPair = findBestAddition(nQuickestRoutes, potentialNodes);
-            	Route minScoreRoute = winningPair.getRoute();
-            	Node nodeToInsert = winningPair.getNode();
-            	minScoreRoute.addNodeToRoute(nodeToInsert, winningPair.getPositionInRoute());
-            	nodeToInsert.updateServiceStatus(true);
-            	int truckCap = minScoreRoute.getTruck().getRemainingCap();
-            	minScoreRoute.getTruck().setRemainingCap(truckCap - nodeToInsert.getDemand());
-            	System.out.println( winningPair.getCost());
-            	minScoreRoute.setTotalRouteTimeInHrs( 
-            				 winningPair.getCost() + 0.25);
+            Pair<Route, Node> winningPair = findBestAddition(nQuickestRoutes, potentialNodes);
+            Route minScoreRoute = winningPair.getRoute();
+            Node nodeToInsert = winningPair.getNode();
+            minScoreRoute.addNodeToRoute(nodeToInsert, winningPair.getPositionInRoute());
+            nodeToInsert.updateServiceStatus(true);
+            int truckCap = minScoreRoute.getTruck().getRemainingCap();
+            minScoreRoute.getTruck().setRemainingCap(truckCap - nodeToInsert.getDemand());
+            minScoreRoute.setTotalRouteTimeInHrs( 
+            			 winningPair.getCost() + 0.25);
             }
     }
 
@@ -159,10 +158,8 @@ public class VehicleRoutingProblem {
             Route r = nQuickestRoutes.get(j);
             double score = potentialSolution.get(j).getCost();
             if (nQuickestRoutes.size() > 2) {
-            	score = r.getTotalRouteTimeInHrs() - potentialSolution.get(j).getCost();
+            	score = r.getTotalRouteTimeInHrs() + potentialSolution.get(j).getCost();
             }
-            System.out.println(score);
-            
             if (score < min) {
                 min = score;
                 s =  potentialSolution.get(j);
@@ -170,7 +167,6 @@ public class VehicleRoutingProblem {
                 nodeToInsert  = s.getNode();
             }
         }
-        System.out.println("MIn score" + s.getCost());
         return new Pair<Route, Node>(minScoreRoute, nodeToInsert, s.getPos(), s.getCost());
     }
     
@@ -182,8 +178,7 @@ public class VehicleRoutingProblem {
         if (currentQuickestRoute.getRouteNodes().size() == 1) {
         	for(int j = 1; j < allNodes.size(); j++) {
         		Node candidate = allNodes.get(j);
-        		if (!candidate.isServiced()) {
-        			if (candidate.getDemand() <= truck.getRemainingCap()) {
+        		if (!candidate.isServiced() && candidate.getDemand() <= truck.getRemainingCap()) {
         				Node a = currentQuickestRoute.getRouteNodes().get(0);
         				double timeGained = timeMatrix[a.getNodeID()][j];
         				if(timeGained != 0D && timeGained < min) {
@@ -193,15 +188,13 @@ public class VehicleRoutingProblem {
         				}
         			}
         		}
-        	}
         } else {
-        	for (int i = 0; i < currentQuickestRoute.getRouteNodes().size() - 1; i++) {
-        		for(int j = 1; j < allNodes.size(); j++) {
+        	for(int j = 1; j < allNodes.size(); j++) {
+        		for (int i = 0; i < currentQuickestRoute.getRouteNodes().size() - 1; i++) {
         			Node candidate = allNodes.get(j);
-        			if (candidate.isServiced() == false) {
-        				Node a = currentQuickestRoute.getRouteNodes().get(i);
-        				Node b = currentQuickestRoute.getRouteNodes().get(i + 1);
-        				if (candidate.getDemand() <= truck.getRemainingCap()) {
+        			if (candidate.isServiced() == false && candidate.getDemand() <= truck.getRemainingCap()) {
+        					Node a = currentQuickestRoute.getRouteNodes().get(i);
+        					Node b = currentQuickestRoute.getRouteNodes().get(i + 1);
         					double trialCost = timeMatrix[a.getNodeID()][j] + timeMatrix[j][b.getNodeID()]
         						- timeMatrix[a.getNodeID()][b.getNodeID()];
         					if(trialCost != 0D && trialCost < min) {
@@ -209,7 +202,6 @@ public class VehicleRoutingProblem {
         						minIndex = j;
         						solutionInsertionPoint = i;
         					}
-        				}
         			}
         		}
         	}
