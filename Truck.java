@@ -1,4 +1,4 @@
-package dmst.mebede.group12.vrp;
+
 
 public class Truck {
 

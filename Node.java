@@ -1,5 +1,4 @@
 
-package dmst.mebede.group12.vrp;
 
 import java.util.Random;
 

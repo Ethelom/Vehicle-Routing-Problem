@@ -1,4 +1,4 @@
-package dmst.mebede.group12.vrp;
+
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,7 +25,7 @@ public class VehicleRoutingProblem {
         createTrucks();
         initializeRoutes();
         convertDistanceToTime(distanceMatrix);
-        printMatrix(distanceMatrix);
+        //printMatrix(distanceMatrix);
         applyAdvanced();
         printFinalData();
     }
@@ -60,16 +60,6 @@ public class VehicleRoutingProblem {
             allNodes.add(customer);
         }
     }
-    
-  /*  public void clarkWright() {
-    	double[][] save = new double[distanceMatrix[0].length][distanceMatrix[1].length];
-    	for (int i = 0;i <= allNodes.size(); i++) {
-    		for (int j = 0; j <= allNodes.size(); j++) {
-    			save[i][j] = timeMatrix[i][0] + timeMatrix[0][j] - timeMatrix[i][j];
-    		}
-    	}
-    	
-    }*/
     
     private void calculateEuclideanDistanceMatrix() {
         this.distanceMatrix = new double[allNodes.size()][allNodes.size()];
@@ -138,50 +128,50 @@ public class VehicleRoutingProblem {
     
     private void applyAdvanced() {
         for (int i = 0; i < allNodes.size()-1; i++) {
-            ArrayList<Solution> potentialNodes;
+            ArrayList<Solution> potentialNodes = new ArrayList<Solution>();
             ArrayList<Route> nQuickestRoutes;
             do {
                 nQuickestRoutes = findNQuickestRoutes(4);
-                
                 potentialNodes = new ArrayList<>(nQuickestRoutes.size());
                 for (Route r : nQuickestRoutes) {
-                	System.out.println(r.toString());
                     potentialNodes.add(findMinUnservicedPoint(r));
                 }
-                System.out.println(potentialNodes.toString());
             } while(potentialNodes.contains(null));
-            Pair<Route, Node> winningPair = findBestAddition(nQuickestRoutes, potentialNodes);
-            Route minScoreRoute = winningPair.getRoute();
-            Node nodeToInsert = winningPair.getNode();
-            System.out.println(winningPair.toString());
-            minScoreRoute.addNodeToRoute(nodeToInsert, winningPair.getPositionInRoute());
-            nodeToInsert.updateServiceStatus(true);
-            int truckCap = minScoreRoute.getTruck().getRemainingCap();
-            minScoreRoute.getTruck().setRemainingCap(truckCap - nodeToInsert.getDemand());
-            minScoreRoute.setTotalRouteTimeInHrs(minScoreRoute.getTotalRouteTimeInHrs() + 
-            				timeMatrix[minScoreRoute.getRouteNodes().get(winningPair.getPositionInRoute()).getNodeID()][nodeToInsert.getNodeID()] 
-            							+ timeMatrix[nodeToInsert.getNodeID()][minScoreRoute.getRouteNodes().get(winningPair.getPositionInRoute()).getNodeID() + 1] + 0.25);
-        }
+            	Pair<Route, Node> winningPair = findBestAddition(nQuickestRoutes, potentialNodes);
+            	Route minScoreRoute = winningPair.getRoute();
+            	Node nodeToInsert = winningPair.getNode();
+            	minScoreRoute.addNodeToRoute(nodeToInsert, winningPair.getPositionInRoute());
+            	nodeToInsert.updateServiceStatus(true);
+            	int truckCap = minScoreRoute.getTruck().getRemainingCap();
+            	minScoreRoute.getTruck().setRemainingCap(truckCap - nodeToInsert.getDemand());
+            	System.out.println( winningPair.getCost());
+            	minScoreRoute.setTotalRouteTimeInHrs( 
+            				 winningPair.getCost() + 0.25);
+            }
     }
 
     private Pair<Route, Node> findBestAddition(ArrayList<Route> nQuickestRoutes, ArrayList<Solution> potentialSolution) {
-        //List<Node> currentNodes = nQuickestRoutes.stream().map(Route::getTruck).map(Truck::getCurrentNode).collect(Collectors.toList());
-
     	Route minScoreRoute = null;
         Node nodeToInsert  = null;
         Solution s = null;
         double min = Double.MAX_VALUE;
         for(int j = 0; j < nQuickestRoutes.size(); j++) {
             Route r = nQuickestRoutes.get(j);
-            double score = r.getTotalRouteTimeInHrs() + potentialSolution.get(j).getCost();
+            double score = potentialSolution.get(j).getCost();
+            if (nQuickestRoutes.size() > 2) {
+            	score = r.getTotalRouteTimeInHrs() - potentialSolution.get(j).getCost();
+            }
+            System.out.println(score);
+            
             if (score < min) {
                 min = score;
                 s =  potentialSolution.get(j);
                 minScoreRoute = r;
-                nodeToInsert  = potentialSolution.get(j).getNode();
+                nodeToInsert  = s.getNode();
             }
         }
-        return new Pair<Route, Node>(minScoreRoute, nodeToInsert, s.getPos());
+        System.out.println("MIn score" + s.getCost());
+        return new Pair<Route, Node>(minScoreRoute, nodeToInsert, s.getPos(), s.getCost());
     }
     
     private  Solution findMinUnservicedPoint(Route currentQuickestRoute) {
@@ -189,19 +179,15 @@ public class VehicleRoutingProblem {
         double min = Double.MAX_VALUE;
         int solutionInsertionPoint = -1;
         int minIndex = -1;
-        double totalCost = Double.MAX_VALUE;
-        System.out.println("Inside " +currentQuickestRoute.getRouteNodes().size());
         if (currentQuickestRoute.getRouteNodes().size() == 1) {
         	for(int j = 1; j < allNodes.size(); j++) {
-        		System.out.println("Inside " + currentQuickestRoute.getRouteNodes().size());
         		Node candidate = allNodes.get(j);
         		if (!candidate.isServiced()) {
         			if (candidate.getDemand() <= truck.getRemainingCap()) {
         				Node a = currentQuickestRoute.getRouteNodes().get(0);
-        				double trialCost = timeMatrix[a.getNodeID()][j];
-        				if(trialCost != 0D && trialCost < min) {
-        					min = trialCost;
-        					totalCost = timeMatrix[a.getNodeID()][j];
+        				double timeGained = timeMatrix[a.getNodeID()][j];
+        				if(timeGained != 0D && timeGained < min) {
+        					min = timeGained;
         					minIndex = j;
         					solutionInsertionPoint = 0;
         				}
@@ -211,16 +197,15 @@ public class VehicleRoutingProblem {
         } else {
         	for (int i = 0; i < currentQuickestRoute.getRouteNodes().size() - 1; i++) {
         		for(int j = 1; j < allNodes.size(); j++) {
-        			System.out.println("Inside " + currentQuickestRoute.getRouteNodes().size());
         			Node candidate = allNodes.get(j);
-        			if (!candidate.isServiced()) {
+        			if (candidate.isServiced() == false) {
         				Node a = currentQuickestRoute.getRouteNodes().get(i);
         				Node b = currentQuickestRoute.getRouteNodes().get(i + 1);
-        				if (!(a.isServiced()) && !(b.isServiced()) && candidate.getDemand() <= truck.getRemainingCap()) {
-        					double trialCost = timeMatrix[a.getNodeID()][j] + timeMatrix[j][b.getNodeID()]- timeMatrix[a.getNodeID()][b.getNodeID()];
+        				if (candidate.getDemand() <= truck.getRemainingCap()) {
+        					double trialCost = timeMatrix[a.getNodeID()][j] + timeMatrix[j][b.getNodeID()]
+        						- timeMatrix[a.getNodeID()][b.getNodeID()];
         					if(trialCost != 0D && trialCost < min) {
         						min = trialCost;
-        						totalCost = timeMatrix[a.getNodeID()][j] + timeMatrix[j][b.getNodeID()];
         						minIndex = j;
         						solutionInsertionPoint = i;
         					}
@@ -230,7 +215,7 @@ public class VehicleRoutingProblem {
         	}
         }
         if (minIndex != -1) {
-        	Solution s = new Solution(allNodes.get(minIndex), solutionInsertionPoint, totalCost, min);
+        	Solution s = new Solution(allNodes.get(minIndex), solutionInsertionPoint, min);
             return s;
         } else {
             currentQuickestRoute.setFinalised(true);
@@ -240,7 +225,8 @@ public class VehicleRoutingProblem {
 
     private ArrayList<Route> findNQuickestRoutes(int n) {
         List<Route> availableRoutes = routes.stream().filter(t -> !t.isFinalised()).collect(Collectors.toList());
-        List<Route> sortedList = availableRoutes.stream().sorted(Comparator.comparingDouble(Route::getTotalRouteTimeInHrs)).collect(Collectors.toList());
+        List<Route> sortedList = availableRoutes.stream().sorted(Comparator.comparingDouble(Route::getTotalRouteTimeInHrs))
+        		.collect(Collectors.toList());
         if (sortedList.size() >= n) {
             return new ArrayList<Route>(sortedList.subList(0, n));
         } else {

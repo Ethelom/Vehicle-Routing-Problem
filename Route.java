@@ -1,4 +1,4 @@
-package dmst.mebede.group12.vrp;
+
 
 import java.util.ArrayList;
 
@@ -56,8 +56,8 @@ public class Route {
         return totalRouteTimeInHrs;
     }
 
-    public void setTotalRouteTimeInHrs(double totalRouteTimeInHrs) {
-        this.totalRouteTimeInHrs = totalRouteTimeInHrs;
+    public void setTotalRouteTimeInHrs(double addTimeInHrs) {
+        this.totalRouteTimeInHrs += addTimeInHrs;
     }
 
     public boolean isFinalised() {
@@ -66,5 +66,10 @@ public class Route {
 
     public void setFinalised(boolean finalised) {
         this.finalised = finalised;
+    }
+    
+    @Override
+    public String toString() {
+    	return "route ID:"+routeID;
     }
 }
