@@ -131,7 +131,7 @@ public class VehicleRoutingProblem {
             ArrayList<Solution> potentialNodes = new ArrayList<Solution>();
             ArrayList<Route> nQuickestRoutes;
             do {
-                nQuickestRoutes = findNQuickestRoutes(4);
+                nQuickestRoutes = findNQuickestRoutes(25);//if n = 25 solution= 7,47 time = 1 sec
                 potentialNodes = new ArrayList<>(nQuickestRoutes.size());
                 for (Route r : nQuickestRoutes) {
                     potentialNodes.add(findMinUnservicedPoint(r));
@@ -145,7 +145,7 @@ public class VehicleRoutingProblem {
             int truckCap = minScoreRoute.getTruck().getRemainingCap();
             minScoreRoute.getTruck().setRemainingCap(truckCap - nodeToInsert.getDemand());
             minScoreRoute.setTotalRouteTimeInHrs( 
-            			 winningPair.getCost() + 0.25);
+            			 winningPair.getCost() + 0.25D);
             }
     }
 
@@ -180,9 +180,9 @@ public class VehicleRoutingProblem {
         		Node candidate = allNodes.get(j);
         		if (!candidate.isServiced() && candidate.getDemand() <= truck.getRemainingCap()) {
         				Node a = currentQuickestRoute.getRouteNodes().get(0);
-        				double timeGained = timeMatrix[a.getNodeID()][j];
-        				if(timeGained != 0D && timeGained < min) {
-        					min = timeGained;
+        				double newCost = timeMatrix[a.getNodeID()][j];
+        				if(newCost != 0D && newCost < min) {
+        					min = newCost;
         					minIndex = j;
         					solutionInsertionPoint = 0;
         				}
@@ -190,9 +190,10 @@ public class VehicleRoutingProblem {
         		}
         } else {
         	for(int j = 1; j < allNodes.size(); j++) {
-        		for (int i = 0; i < currentQuickestRoute.getRouteNodes().size() - 1; i++) {
-        			Node candidate = allNodes.get(j);
-        			if (candidate.isServiced() == false && candidate.getDemand() <= truck.getRemainingCap()) {
+        		Node candidate = allNodes.get(j);
+        		if (candidate.isServiced() == false) {
+        			for (int i = 0; i < currentQuickestRoute.getRouteNodes().size() - 1; i++) {
+        				if (candidate.getDemand() <= truck.getRemainingCap()) {
         					Node a = currentQuickestRoute.getRouteNodes().get(i);
         					Node b = currentQuickestRoute.getRouteNodes().get(i + 1);
         					double trialCost = timeMatrix[a.getNodeID()][j] + timeMatrix[j][b.getNodeID()]
@@ -202,6 +203,7 @@ public class VehicleRoutingProblem {
         						minIndex = j;
         						solutionInsertionPoint = i;
         					}
+        				}
         			}
         		}
         	}
