@@ -192,18 +192,17 @@ public class VehicleRoutingProblem {
         	for(int j = 1; j < allNodes.size(); j++) {
         		Node candidate = allNodes.get(j);
         		if (candidate.isServiced() == false) {
-        			for (int i = 0; i < currentQuickestRoute.getRouteNodes().size() - 1; i++) {
         				for (int i = 0; i < currentQuickestRoute.getRouteNodes().size(); i++) {
-        				if (candidate.getDemand() <= truck.getRemainingCap()) {
-        					if (currentQuickestRoute.getRouteNodes().size() - 1 == i) {
-        						Node a = currentQuickestRoute.getRouteNodes().get(i);
-        						double newCost = timeMatrix[a.getNodeID()][j];
-                				if(newCost != 0D && newCost < min) {
-                					min = newCost;
-                					minIndex = j;
-                					solutionInsertionPoint = i;
-                				}
-        					} else {
+        				    if (candidate.getDemand() <= truck.getRemainingCap()) {
+        					    if (currentQuickestRoute.getRouteNodes().size() - 1 == i) {
+        						    Node a = currentQuickestRoute.getRouteNodes().get(i);
+        						    double newCost = timeMatrix[a.getNodeID()][j];
+                				    if(newCost != 0D && newCost < min) {
+                					    min = newCost;
+                					    minIndex = j;
+                					    solutionInsertionPoint = i;
+                				    }
+        					    } else {
         			
         							Node a = currentQuickestRoute.getRouteNodes().get(i);
         							Node b = currentQuickestRoute.getRouteNodes().get(i + 1);
@@ -214,6 +213,7 @@ public class VehicleRoutingProblem {
         								minIndex = j;
         								solutionInsertionPoint = i;
         							}
+                                }
         					}
         				}
         			}
