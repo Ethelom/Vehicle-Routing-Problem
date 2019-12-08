@@ -193,15 +193,27 @@ public class VehicleRoutingProblem {
         		Node candidate = allNodes.get(j);
         		if (candidate.isServiced() == false) {
         			for (int i = 0; i < currentQuickestRoute.getRouteNodes().size() - 1; i++) {
+        				for (int i = 0; i < currentQuickestRoute.getRouteNodes().size(); i++) {
         				if (candidate.getDemand() <= truck.getRemainingCap()) {
-        					Node a = currentQuickestRoute.getRouteNodes().get(i);
-        					Node b = currentQuickestRoute.getRouteNodes().get(i + 1);
-        					double trialCost = timeMatrix[a.getNodeID()][j] + timeMatrix[j][b.getNodeID()]
-        						- timeMatrix[a.getNodeID()][b.getNodeID()];
-        					if(trialCost != 0D && trialCost < min) {
-        						min = trialCost;
-        						minIndex = j;
-        						solutionInsertionPoint = i;
+        					if (currentQuickestRoute.getRouteNodes().size() - 1 == i) {
+        						Node a = currentQuickestRoute.getRouteNodes().get(i);
+        						double newCost = timeMatrix[a.getNodeID()][j];
+                				if(newCost != 0D && newCost < min) {
+                					min = newCost;
+                					minIndex = j;
+                					solutionInsertionPoint = i;
+                				}
+        					} else {
+        			
+        							Node a = currentQuickestRoute.getRouteNodes().get(i);
+        							Node b = currentQuickestRoute.getRouteNodes().get(i + 1);
+        							double trialCost = timeMatrix[a.getNodeID()][j] + timeMatrix[j][b.getNodeID()]
+        								- timeMatrix[a.getNodeID()][b.getNodeID()];
+        							if(trialCost != 0D && trialCost < min) {
+        								min = trialCost;
+        								minIndex = j;
+        								solutionInsertionPoint = i;
+        							}
         					}
         				}
         			}
