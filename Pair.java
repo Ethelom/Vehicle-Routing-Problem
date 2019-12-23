@@ -1,4 +1,5 @@
 
+package dmst.mebede.group12.vrp;
 
 public class Pair<R, N> {
     private R route;
@@ -16,6 +17,7 @@ public class Pair<R, N> {
     public double getCost() {
 		return cost;
 	}
+    
 
 	public void setCost(double cost) {
 		this.cost = cost;
@@ -36,6 +38,5 @@ public class Pair<R, N> {
     public N getNode() {
         return node;
     }
-
 
 }
