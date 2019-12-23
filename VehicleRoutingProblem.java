@@ -1,5 +1,4 @@
-
-
+package dmst.mebede.group12.vrp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -17,6 +16,8 @@ public class VehicleRoutingProblem {
     private ArrayList<Truck> allTrucks;
     private ArrayList<Route> routes;
     private double[][] distanceMatrix, timeMatrix;
+    private Route maxRoute;
+    private Route cloneInitialRoute = maxRoute;
 
     public VehicleRoutingProblem(int totalServicePoints, int totalTrucks) {
         this.totalServicePoints = totalServicePoints;
@@ -27,9 +28,113 @@ public class VehicleRoutingProblem {
         convertDistanceToTime(distanceMatrix);
         //printMatrix(distanceMatrix);
         applyAdvanced();
+        addDepositoryInEnd();
         printFinalData();
+        
+        boolean endMove = false;
+        while (!endMove) {
+        	RelocationMove rm = new RelocationMove();
+        	applyBestRelocationMove(rm);
+        	if (rm.getMoveCost() > -0.00001) {
+        		endMove = true;
+        	}
+        	ApplyMove(rm);
+        	calculateMaxRoute();
+            System.out.println(" Relocation: " + maxRoute.getTotalRouteTimeInHrs());
+        }
     }
+    
+    private void ApplyMove(RelocationMove rm) {
+		if (rm.getMoveCost() == Double.MAX_VALUE) {
+            return;
+        }
+		Route targetRoute = routes.get(rm.getTargetRoutePosition());
+		Node B = maxRoute.getRouteNodes().get(rm.getOriginNodePosition());
+		double newMoveCost;
+		if (maxRoute == targetRoute) {
+			maxRoute.getRouteNodes().remove(rm.getOriginNodePosition());
+            if (rm.getOriginNodePosition() < rm.getTargetNodePosition()) {
+                targetRoute.getRouteNodes().add(rm.getTargetNodePosition(), B);
+            } else {
+                targetRoute.getRouteNodes().add(rm.getTargetNodePosition() + 1, B);
+            }
+            maxRoute.setTotalRouteTimeInHrs(maxRoute.getTotalRouteTimeInHrs() + rm.getMoveCost());
+		} else {
+            Node A = maxRoute.getRouteNodes().get(rm.getOriginNodePosition() - 1);
+            Node C = maxRoute.getRouteNodes().get(rm.getOriginNodePosition() + 1);
 
+            Node F = targetRoute.getRouteNodes().get(rm.getOriginNodePosition());
+            Node G = targetRoute.getRouteNodes().get(rm.getOriginNodePosition() + 1);
+
+            double costChangeOrigin = distanceMatrix[A.getNodeID()][C.getNodeID()] - distanceMatrix[A.getNodeID()][B.getNodeID()] - distanceMatrix[B.getNodeID()][C.getNodeID()];
+            double costChangeTarget = distanceMatrix[F.getNodeID()][B.getNodeID()] + distanceMatrix[B.getNodeID()][G.getNodeID()] - distanceMatrix[F.getNodeID()][G.getNodeID()];
+
+            maxRoute.getTruck().setRemainingCap(maxRoute.getTruck().getRemainingCap() - B.getDemand());
+            targetRoute.getTruck().setRemainingCap(targetRoute.getTruck().getRemainingCap() + B.getDemand()); 
+
+            maxRoute.setTotalRouteTimeInHrs(maxRoute.getTotalRouteTimeInHrs() + costChangeOrigin);
+            targetRoute.setTotalRouteTimeInHrs(targetRoute.getTotalRouteTimeInHrs() + costChangeTarget);
+            maxRoute.getRouteNodes().remove(rm.getOriginNodePosition());
+            targetRoute.getRouteNodes().add(rm.getTargetNodePosition() + 1, B);
+            newMoveCost = costChangeOrigin + costChangeTarget;
+		}
+	}
+
+    
+    private void addDepositoryInEnd() {
+		for (int i = 0 ; i < routes.size(); i++) {
+			routes.get(i).getRouteNodes().add(depository);
+		}
+		
+	}
+    
+    private void applyBestRelocationMove(RelocationMove rm) {
+		for (int targetRouteIndex = 0; targetRouteIndex < routes.size(); targetRouteIndex++) {
+			Route rt2 = routes.get(targetRouteIndex);
+			for (int originNodeIndex = 1; originNodeIndex < maxRoute.getRouteNodes().size() - 1; originNodeIndex++) {
+                for (int targetNodeIndex = 0; targetNodeIndex < rt2.getRouteNodes().size() - 1; targetNodeIndex++) {
+                	if (maxRoute.equals(rt2) && (targetNodeIndex == originNodeIndex || targetNodeIndex == originNodeIndex - 1)) {
+                        continue;
+                    }
+                	Node a = maxRoute.getRouteNodes().get(originNodeIndex - 1);
+                    Node b = maxRoute.getRouteNodes().get(originNodeIndex);
+                    Node c = maxRoute.getRouteNodes().get(originNodeIndex + 1);
+
+                    Node insPoint1 = rt2.getRouteNodes().get(targetNodeIndex);
+                    Node insPoint2 = rt2.getRouteNodes().get(targetNodeIndex + 1);
+                    if (!maxRoute.equals(rt2)) {
+                        if (rt2.getTruck().getRemainingCap() - b.getDemand() >= 0) {
+                            continue;
+                        }
+                    }
+                    
+                    double costAdded = distanceMatrix[a.getNodeID()][c.getNodeID()] + distanceMatrix[insPoint1.getNodeID()][b.getNodeID()] + distanceMatrix[b.getNodeID()][insPoint2.getNodeID()];
+                    double costRemoved = distanceMatrix[a.getNodeID()][b.getNodeID()] + distanceMatrix[b.getNodeID()][c.getNodeID()] + distanceMatrix[insPoint1.getNodeID()][insPoint2.getNodeID()];
+                    double moveCost = costAdded - costRemoved;
+
+                    double costChangeOriginRoute = distanceMatrix[a.getNodeID()][c.getNodeID()] - (distanceMatrix[a.getNodeID()][b.getNodeID()] + distanceMatrix[b.getNodeID()][c.getNodeID()]);
+                    double costChangeTargetRoute = distanceMatrix[insPoint1.getNodeID()][b.getNodeID()] + distanceMatrix[b.getNodeID()][insPoint2.getNodeID()] - distanceMatrix[insPoint1.getNodeID()][insPoint2.getNodeID()];
+                    double totalObjectiveChange = costChangeOriginRoute + costChangeTargetRoute;
+                    if (Math.abs(moveCost - totalObjectiveChange) > 0.0001) {
+                        int mn = 0;
+                    }
+                    
+                    if (moveCost < rm.getMoveCost()) {
+                        rm.setOriginNodePosition(originNodeIndex);
+                        rm.setTargetNodePosition(targetNodeIndex);
+                        rm.setTargetRoutePosition(targetRouteIndex);
+                        rm.setMoveCost(moveCost);
+                    }
+                }
+			}
+		}
+	}
+    
+    private void calculateMaxRoute()  {
+		maxRoute = Collections.max(routes, Comparator.comparing(r -> r.getTotalRouteTimeInHrs()));
+	}
+
+    
     private void printFinalData() {
         for(Route r : routes) {
             System.out.println("Route " + r.getRouteID() + ": ");
@@ -39,7 +144,7 @@ public class VehicleRoutingProblem {
             System.out.println("\n");
         }
 
-        Route maxRoute = Collections.max(routes, Comparator.comparing(r -> r.getTotalRouteTimeInHrs()));
+        calculateMaxRoute();
         System.out.println("Longest route: " + maxRoute.getRouteID() + " (" + maxRoute.getTotalRouteTimeInHrs() + " hours)");
 
     }
@@ -219,7 +324,10 @@ public class VehicleRoutingProblem {
         			}
         		}
         	}
-        }
+        
+	
+
+  
         if (minIndex != -1) {
         	Solution s = new Solution(allNodes.get(minIndex), solutionInsertionPoint, min);
             return s;
