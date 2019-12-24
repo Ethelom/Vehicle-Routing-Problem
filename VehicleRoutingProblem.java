@@ -15,9 +15,9 @@ public class VehicleRoutingProblem {
     private ArrayList<Node> allNodes;
     private ArrayList<Truck> allTrucks;
     private ArrayList<Route> routes;
-    private double[][] distanceMatrix, timeMatrix;
+    private double[][] distanceMatrix, timeMatrix, timeM;
     private Route maxRoute;
-    private Route cloneInitialRoute = maxRoute;
+    private Route cloneInitialRoute;
 
     public VehicleRoutingProblem(int totalServicePoints, int totalTrucks) {
         this.totalServicePoints = totalServicePoints;
@@ -26,31 +26,47 @@ public class VehicleRoutingProblem {
         createTrucks();
         initializeRoutes();
         convertDistanceToTime(distanceMatrix);
-        //printMatrix(distanceMatrix);
         applyAdvanced();
         addDepositoryInEnd();
         printFinalData();
-        
         boolean endMove = false;
+        CalculateTimeWithoutReturnToDepo();
         while (!endMove) {
         	RelocationMove rm = new RelocationMove();
         	applyBestRelocationMove(rm);
         	if (rm.getMoveCost() > -0.00001) {
         		endMove = true;
-        	}
-        	ApplyMove(rm);
-        	calculateMaxRoute();
-            System.out.println(" Relocation: " + maxRoute.getTotalRouteTimeInHrs());
+        	} else {
+        		ApplyMove(rm);
+        		calculateMaxRoute();
+        		System.out.println(" Relocation: " + maxRoute.getTotalRouteTimeInHrs()+ "route:" + maxRoute.getRouteNodes().toString());
+            }
         }
     }
     
-    private void ApplyMove(RelocationMove rm) {
+    private void CalculateTimeWithoutReturnToDepo() {
+    	timeM = new double[totalServicePoints+1][totalServicePoints+1];
+    	for (int i = 0; i < timeMatrix.length;i++) {
+			for (int j = 0; j < timeMatrix.length; j++) {
+				timeM[i][j] = 0;
+			}
+    	}
+		for (int i = 0; i < timeMatrix.length;i++) {
+			for (int j = 0; j < timeMatrix.length; j++) {
+				if (j != 0) {
+					timeM[i][j] = timeMatrix[i][j];
+				}
+				
+			}
+		}
+	}
+
+	private void ApplyMove(RelocationMove rm) {
 		if (rm.getMoveCost() == Double.MAX_VALUE) {
             return;
         }
 		Route targetRoute = routes.get(rm.getTargetRoutePosition());
 		Node B = maxRoute.getRouteNodes().get(rm.getOriginNodePosition());
-		double newMoveCost;
 		if (maxRoute == targetRoute) {
 			maxRoute.getRouteNodes().remove(rm.getOriginNodePosition());
             if (rm.getOriginNodePosition() < rm.getTargetNodePosition()) {
@@ -58,7 +74,8 @@ public class VehicleRoutingProblem {
             } else {
                 targetRoute.getRouteNodes().add(rm.getTargetNodePosition() + 1, B);
             }
-            maxRoute.setTotalRouteTimeInHrs(maxRoute.getTotalRouteTimeInHrs() + rm.getMoveCost());
+            System.out.println("maxroute: "+maxRoute.getTotalRouteTimeInHrs());
+            maxRoute.setTotalRouteTimeInHrs(rm.getMoveCost());
 		} else {
             Node A = maxRoute.getRouteNodes().get(rm.getOriginNodePosition() - 1);
             Node C = maxRoute.getRouteNodes().get(rm.getOriginNodePosition() + 1);
@@ -66,17 +83,16 @@ public class VehicleRoutingProblem {
             Node F = targetRoute.getRouteNodes().get(rm.getOriginNodePosition());
             Node G = targetRoute.getRouteNodes().get(rm.getOriginNodePosition() + 1);
 
-            double costChangeOrigin = distanceMatrix[A.getNodeID()][C.getNodeID()] - distanceMatrix[A.getNodeID()][B.getNodeID()] - distanceMatrix[B.getNodeID()][C.getNodeID()];
-            double costChangeTarget = distanceMatrix[F.getNodeID()][B.getNodeID()] + distanceMatrix[B.getNodeID()][G.getNodeID()] - distanceMatrix[F.getNodeID()][G.getNodeID()];
-
+            double costChangeOrigin = timeM[A.getNodeID()][C.getNodeID()] - timeM[A.getNodeID()][B.getNodeID()] - timeM[B.getNodeID()][C.getNodeID()];
+            double costChangeTarget = timeM[F.getNodeID()][B.getNodeID()] + timeM[B.getNodeID()][G.getNodeID()] - timeM[F.getNodeID()][G.getNodeID()];
+            System.out.println(maxRoute.getTruck().getRemainingCap() - B.getDemand()+ ","+targetRoute.getTruck().getRemainingCap() + B.getDemand());
             maxRoute.getTruck().setRemainingCap(maxRoute.getTruck().getRemainingCap() - B.getDemand());
             targetRoute.getTruck().setRemainingCap(targetRoute.getTruck().getRemainingCap() + B.getDemand()); 
 
-            maxRoute.setTotalRouteTimeInHrs(maxRoute.getTotalRouteTimeInHrs() + costChangeOrigin);
-            targetRoute.setTotalRouteTimeInHrs(targetRoute.getTotalRouteTimeInHrs() + costChangeTarget);
+            maxRoute.setTotalRouteTimeInHrs(costChangeOrigin);
+            targetRoute.setTotalRouteTimeInHrs(costChangeTarget);
             maxRoute.getRouteNodes().remove(rm.getOriginNodePosition());
             targetRoute.getRouteNodes().add(rm.getTargetNodePosition() + 1, B);
-            newMoveCost = costChangeOrigin + costChangeTarget;
 		}
 	}
 
@@ -107,28 +123,34 @@ public class VehicleRoutingProblem {
                             continue;
                         }
                     }
-                    
-                    double costAdded = distanceMatrix[a.getNodeID()][c.getNodeID()] + distanceMatrix[insPoint1.getNodeID()][b.getNodeID()] + distanceMatrix[b.getNodeID()][insPoint2.getNodeID()];
-                    double costRemoved = distanceMatrix[a.getNodeID()][b.getNodeID()] + distanceMatrix[b.getNodeID()][c.getNodeID()] + distanceMatrix[insPoint1.getNodeID()][insPoint2.getNodeID()];
+                    double costAdded = timeM[a.getNodeID()][c.getNodeID()] + timeM[insPoint1.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][insPoint2.getNodeID()];
+                    double costRemoved = timeM[a.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][c.getNodeID()] + timeM[insPoint1.getNodeID()][insPoint2.getNodeID()];
                     double moveCost = costAdded - costRemoved;
-
-                    double costChangeOriginRoute = distanceMatrix[a.getNodeID()][c.getNodeID()] - (distanceMatrix[a.getNodeID()][b.getNodeID()] + distanceMatrix[b.getNodeID()][c.getNodeID()]);
-                    double costChangeTargetRoute = distanceMatrix[insPoint1.getNodeID()][b.getNodeID()] + distanceMatrix[b.getNodeID()][insPoint2.getNodeID()] - distanceMatrix[insPoint1.getNodeID()][insPoint2.getNodeID()];
-                    double totalObjectiveChange = costChangeOriginRoute + costChangeTargetRoute;
-                    if (Math.abs(moveCost - totalObjectiveChange) > 0.0001) {
-                        int mn = 0;
+                    System.out.println(moveCost);
+                    double newRouteInHours = 0;
+                    double maxHoursOfRoute = maxRoute.getTotalRouteTimeInHrs(); 
+                    if (maxRoute.equals(rt2)){
+                    	maxHoursOfRoute = moveCost + maxRoute.getTotalRouteTimeInHrs();
+                    } else {
+                    	newRouteInHours = timeM[insPoint1.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][insPoint2.getNodeID()] 
+                    		-  timeM[insPoint1.getNodeID()][insPoint2.getNodeID()] + rt2.getTotalRouteTimeInHrs();
+                    	if (newRouteInHours > maxRoute.getTotalRouteTimeInHrs()) {
+                    		maxHoursOfRoute = newRouteInHours; 
+                    	}
                     }
-                    
-                    if (moveCost < rm.getMoveCost()) {
+                    System.out.println("new max or same:" + maxHoursOfRoute);
+                    if (maxHoursOfRoute < rm.getMaxRouteTime())
                         rm.setOriginNodePosition(originNodeIndex);
                         rm.setTargetNodePosition(targetNodeIndex);
                         rm.setTargetRoutePosition(targetRouteIndex);
+                        rm.setMaxRouteTime(maxHoursOfRoute);
                         rm.setMoveCost(moveCost);
                     }
                 }
 			}
+		System.out.println(rm.getMaxRouteTime());
 		}
-	}
+	
     
     private void calculateMaxRoute()  {
 		maxRoute = Collections.max(routes, Comparator.comparing(r -> r.getTotalRouteTimeInHrs()));
@@ -362,7 +384,7 @@ public class VehicleRoutingProblem {
 
     public static void main(String[] args) {
         long start = System.currentTimeMillis();
-        new VehicleRoutingProblem(200, 25);
+        new VehicleRoutingProblem(10, 2);
         long end = System.currentTimeMillis();
         float duration = (end - start) / 1000F;
         System.out.println();
