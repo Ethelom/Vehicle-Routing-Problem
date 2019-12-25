@@ -17,7 +17,6 @@ public class VehicleRoutingProblem {
     private ArrayList<Route> routes;
     private double[][] distanceMatrix, timeMatrix, timeM;
     private Route maxRoute;
-    private Route cloneInitialRoute;
 
     public VehicleRoutingProblem(int totalServicePoints, int totalTrucks) {
         this.totalServicePoints = totalServicePoints;
@@ -105,12 +104,14 @@ public class VehicleRoutingProblem {
 	}
     
     private void applyBestRelocationMove(RelocationMove rm) {
+    	int originRouteIndex = routes.indexOf(maxRoute);
 		for (int targetRouteIndex = 0; targetRouteIndex < routes.size(); targetRouteIndex++) {
 			Route rt2 = routes.get(targetRouteIndex);
 			for (int originNodeIndex = 1; originNodeIndex < maxRoute.getRouteNodes().size() - 1; originNodeIndex++) {
                 for (int targetNodeIndex = 0; targetNodeIndex < rt2.getRouteNodes().size() - 1; targetNodeIndex++) {
-                	if (maxRoute.equals(rt2) && (targetNodeIndex == originNodeIndex || targetNodeIndex == originNodeIndex - 1)) {
-                        continue;
+                	if (originRouteIndex == targetRouteIndex && (targetNodeIndex == originNodeIndex || targetNodeIndex == originNodeIndex - 1)) {
+                		System.out.println("to continue: " + targetRouteIndex);
+                		continue;
                     }
                 	Node a = maxRoute.getRouteNodes().get(originNodeIndex - 1);
                     Node b = maxRoute.getRouteNodes().get(originNodeIndex);
@@ -118,27 +119,32 @@ public class VehicleRoutingProblem {
 
                     Node insPoint1 = rt2.getRouteNodes().get(targetNodeIndex);
                     Node insPoint2 = rt2.getRouteNodes().get(targetNodeIndex + 1);
-                    if (!maxRoute.equals(rt2)) {
+                    if (originRouteIndex != targetRouteIndex) {
+                    	System.out.println("inside if for different routes");
                         if (rt2.getTruck().getRemainingCap() - b.getDemand() >= 0) {
+                        	System.out.println("inside if not enough cap");
                             continue;
                         }
                     }
                     double costAdded = timeM[a.getNodeID()][c.getNodeID()] + timeM[insPoint1.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][insPoint2.getNodeID()];
                     double costRemoved = timeM[a.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][c.getNodeID()] + timeM[insPoint1.getNodeID()][insPoint2.getNodeID()];
                     double moveCost = costAdded - costRemoved;
-                    System.out.println(moveCost);
                     double newRouteInHours = 0;
-                    double maxHoursOfRoute = maxRoute.getTotalRouteTimeInHrs(); 
-                    if (maxRoute.equals(rt2)){
-                    	maxHoursOfRoute = moveCost + maxRoute.getTotalRouteTimeInHrs();
+                    
+                    double costChangeOriginRoute = timeM[a.getNodeID()][c.getNodeID()] - (timeM[a.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][c.getNodeID()]);
+                    double costChangeTargetRoute = timeM[insPoint1.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][insPoint2.getNodeID()] - timeM[insPoint1.getNodeID()][insPoint2.getNodeID()];
+
+                    double newOldMaxRouteInHours = 0;
+                    if (originRouteIndex == targetRouteIndex){
+                    	System.out.println("inside equal route");
+                    	newOldMaxRouteInHours = moveCost + maxRoute.getTotalRouteTimeInHrs();
                     } else {
-                    	newRouteInHours = timeM[insPoint1.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][insPoint2.getNodeID()] 
-                    		-  timeM[insPoint1.getNodeID()][insPoint2.getNodeID()] + rt2.getTotalRouteTimeInHrs();
-                    	if (newRouteInHours > maxRoute.getTotalRouteTimeInHrs()) {
-                    		maxHoursOfRoute = newRouteInHours; 
-                    	}
+                    	System.out.println("inside NOT equal route");
+                    	newRouteInHours = costChangeTargetRoute + rt2.getTotalRouteTimeInHrs();
+                    	newOldMaxRouteInHours = costChangeOriginRoute + maxRoute.getTotalRouteTimeInHrs();
                     }
-                    System.out.println("new max or same:" + maxHoursOfRoute);
+                    double maxHoursOfRoute = CalculateMaxHoursInMove(newRouteInHours, newOldMaxRouteInHours, originRouteIndex, targetRouteIndex);
+                    System.out.println("Max Route Hours of this relocation:" + maxHoursOfRoute);
                     if (maxHoursOfRoute < rm.getMaxRouteTime())
                         rm.setOriginNodePosition(originNodeIndex);
                         rm.setTargetNodePosition(targetNodeIndex);
@@ -152,7 +158,33 @@ public class VehicleRoutingProblem {
 		}
 	
     
-    private void calculateMaxRoute()  {
+    private double CalculateMaxHoursInMove(double newRouteInHours, double newOldMaxRouteInHours, int originRouteIndex,
+			int targetRouteIndex) {
+		double maxHours = newRouteInHours;
+		boolean b = (originRouteIndex == targetRouteIndex);
+		if (newOldMaxRouteInHours > maxHours) {
+			maxHours = newOldMaxRouteInHours;
+		}
+    	for (int i = 0; i < routes.size(); i++) {
+    		if (b) {
+    			if (i != originRouteIndex) {
+    				if (routes.get(i).getTotalRouteTimeInHrs() > maxHours) {
+    					maxHours = routes.get(i).getTotalRouteTimeInHrs();
+    				}
+    			}
+    		} else {
+    			if ((i != originRouteIndex) && (i != targetRouteIndex)) {
+    				if (routes.get(i).getTotalRouteTimeInHrs() > maxHours) {
+    					maxHours = routes.get(i).getTotalRouteTimeInHrs();
+    				}
+    			}
+    			
+    		}
+    	}
+		return maxHours;
+	}
+
+	private void calculateMaxRoute()  {
 		maxRoute = Collections.max(routes, Comparator.comparing(r -> r.getTotalRouteTimeInHrs()));
 	}
 
@@ -384,7 +416,7 @@ public class VehicleRoutingProblem {
 
     public static void main(String[] args) {
         long start = System.currentTimeMillis();
-        new VehicleRoutingProblem(10, 2);
+        new VehicleRoutingProblem(200, 25);
         long end = System.currentTimeMillis();
         float duration = (end - start) / 1000F;
         System.out.println();
