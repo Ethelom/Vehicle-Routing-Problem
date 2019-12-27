@@ -17,19 +17,21 @@ public class VehicleRoutingProblem {
     private ArrayList<Route> routes;
     private double[][] distanceMatrix, timeMatrix, timeM;
     private Route maxRoute;
-
+    /**
+    * Main method that calls everything.
+    */
     public VehicleRoutingProblem(int totalServicePoints, int totalTrucks) {
         this.totalServicePoints = totalServicePoints;
         this.totalTrucks = totalTrucks;
-        generateRandomNetwork();
-        createTrucks();
+        generateRandomNetwork();//randomly creates nodes
+        createTrucks();//creation of trucks	
         initializeRoutes();
-        convertDistanceToTime(distanceMatrix);
-        applyAdvanced();
-        addDepositoryInEnd();
-        printFinalData();
-        boolean endMove = false;
-        CalculateTimeWithoutReturnToDepo();
+        convertDistanceToTime(distanceMatrix);//timeMatrix creation
+        applyAdvanced();//
+        addDepositoryInEnd();//προσθήκη αποθήκης στο τέλος
+        printFinalData();//τυπωνουμε
+        boolean endMove = false;//για να δουμε ποτε τελειωνει
+        CalculateTimeWithoutReturnToDepo();//υπολογισμος χωρθς αποθηκη
         while (!endMove) {
         	RelocationMove rm = new RelocationMove();
         	applyBestRelocationMove(rm);
@@ -44,7 +46,7 @@ public class VehicleRoutingProblem {
     }
     
     private void CalculateTimeWithoutReturnToDepo() {
-    	timeM = new double[totalServicePoints+1][totalServicePoints+1];
+    	timeM = new double[totalServicePoints+1][totalServicePoints+1];//creation of a clone of timeMatrix
     	for (int i = 0; i < timeMatrix.length;i++) {
 			for (int j = 0; j < timeMatrix.length; j++) {
 				timeM[i][j] = 0;
@@ -61,11 +63,11 @@ public class VehicleRoutingProblem {
 	}
 
 	private void ApplyMove(RelocationMove rm) {
-		if (rm.getMoveCost() == Double.MAX_VALUE) {
+		if (rm.getMoveCost() == Double.MAX_VALUE) { //don't do anything if cost high
             return;
-        }
+663           }
 		Route targetRoute = routes.get(rm.getTargetRoutePosition());
-		Node B = maxRoute.getRouteNodes().get(rm.getOriginNodePosition());
+		Node B = maxRoute.getRouteNodes().get(rm.getOriginNodePosition());//node to change is now
 		if (maxRoute == targetRoute) {
 			maxRoute.getRouteNodes().remove(rm.getOriginNodePosition());
             if (rm.getOriginNodePosition() < rm.getTargetNodePosition()) {
@@ -76,8 +78,8 @@ public class VehicleRoutingProblem {
             System.out.println("maxroute: "+maxRoute.getTotalRouteTimeInHrs());
             maxRoute.setTotalRouteTimeInHrs(rm.getMoveCost());
 		} else {
-            Node A = maxRoute.getRouteNodes().get(rm.getOriginNodePosition() - 1);
-            Node C = maxRoute.getRouteNodes().get(rm.getOriginNodePosition() + 1);
+            Node A = maxRoute.getRouteNodes().get(rm.getOriginNodePosition() - 1);//get previous node
+            Node C = maxRoute.getRouteNodes().get(rm.getOriginNodePosition() + 1);//get next node
 
             Node F = targetRoute.getRouteNodes().get(rm.getOriginNodePosition());
             Node G = targetRoute.getRouteNodes().get(rm.getOriginNodePosition() + 1);
@@ -104,13 +106,14 @@ public class VehicleRoutingProblem {
 	}
     
     private void applyBestRelocationMove(RelocationMove rm) {
-    	int originRouteIndex = routes.indexOf(maxRoute);
+    	int originRouteIndex = routes.indexOf(maxRoute);//keep longest route index
 		for (int targetRouteIndex = 0; targetRouteIndex < routes.size(); targetRouteIndex++) {
 			Route rt2 = routes.get(targetRouteIndex);
 			for (int originNodeIndex = 1; originNodeIndex < maxRoute.getRouteNodes().size() - 1; originNodeIndex++) {
                 for (int targetNodeIndex = 0; targetNodeIndex < rt2.getRouteNodes().size() - 1; targetNodeIndex++) {
                 	if (originRouteIndex == targetRouteIndex && (targetNodeIndex == originNodeIndex || targetNodeIndex == originNodeIndex - 1)) {
-                		System.out.println("to continue: " + targetRouteIndex);
+                		//doesn't relocate if it's the same 
+				System.out.println("to continue: " + targetRouteIndex);
                 		continue;
                     }
                 	Node a = maxRoute.getRouteNodes().get(originNodeIndex - 1);
@@ -126,9 +129,12 @@ public class VehicleRoutingProblem {
                             continue;
                         }
                     }
+			//cost added is the cost the new route has
                     double costAdded = timeM[a.getNodeID()][c.getNodeID()] + timeM[insPoint1.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][insPoint2.getNodeID()];
-                    double costRemoved = timeM[a.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][c.getNodeID()] + timeM[insPoint1.getNodeID()][insPoint2.getNodeID()];
-                    double moveCost = costAdded - costRemoved;
+                    //cost removed is the removal of the old's route cost
+		    double costRemoved = timeM[a.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][c.getNodeID()] + timeM[insPoint1.getNodeID()][insPoint2.getNodeID()];
+                    //final new cost
+		    double moveCost = costAdded - costRemoved;
                     double newRouteInHours = 0;
                     
                     double costChangeOriginRoute = timeM[a.getNodeID()][c.getNodeID()] - (timeM[a.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][c.getNodeID()]);
@@ -287,7 +293,7 @@ public class VehicleRoutingProblem {
     
     private void applyAdvanced() {
         for (int i = 0; i < allNodes.size()-1; i++) {
-            ArrayList<Solution> potentialNodes = new ArrayList<Solution>();
+            ArrayList<Solution> potentialNodes = new ArrayList<Solution>();//keeps nodes that might change
             ArrayList<Route> nQuickestRoutes;
             do {
                 nQuickestRoutes = findNQuickestRoutes(25);//if n = 25 solution= 7,47 time = 1 sec
@@ -390,7 +396,7 @@ public class VehicleRoutingProblem {
             return null;
         }
     }
-
+    
     private ArrayList<Route> findNQuickestRoutes(int n) {
         List<Route> availableRoutes = routes.stream().filter(t -> !t.isFinalised()).collect(Collectors.toList());
         List<Route> sortedList = availableRoutes.stream().sorted(Comparator.comparingDouble(Route::getTotalRouteTimeInHrs))
@@ -401,7 +407,7 @@ public class VehicleRoutingProblem {
             return new ArrayList<Route>(sortedList);
         }
     }
-
+    //method that creates timematrix based on distance.	
     private void convertDistanceToTime(double[][] distanceMatrix) {
         int numberOfRows = distanceMatrix[0].length;
         int numberOfCols = distanceMatrix[1].length;
