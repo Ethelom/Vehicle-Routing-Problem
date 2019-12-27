@@ -66,11 +66,11 @@ public class VehicleRoutingProblem {
 		if (rm.getMoveCost() == Double.MAX_VALUE) { //don't do anything if cost high
             return;
 663           }
-		Route targetRoute = routes.get(rm.getTargetRoutePosition());
+		Route targetRoute = routes.get(rm.getTargetRoutePosition());//ΕΦΗ
 		Node B = maxRoute.getRouteNodes().get(rm.getOriginNodePosition());//node to change is now
 		if (maxRoute == targetRoute) {
 			maxRoute.getRouteNodes().remove(rm.getOriginNodePosition());
-            if (rm.getOriginNodePosition() < rm.getTargetNodePosition()) {
+            if (rm.getOriginNodePosition() < rm.getTargetNodePosition()) {//application of  node B to the correct position
                 targetRoute.getRouteNodes().add(rm.getTargetNodePosition(), B);
             } else {
                 targetRoute.getRouteNodes().add(rm.getTargetNodePosition() + 1, B);
@@ -80,7 +80,7 @@ public class VehicleRoutingProblem {
 		} else {
             Node A = maxRoute.getRouteNodes().get(rm.getOriginNodePosition() - 1);//get previous node
             Node C = maxRoute.getRouteNodes().get(rm.getOriginNodePosition() + 1);//get next node
-
+		//EFFIE
             Node F = targetRoute.getRouteNodes().get(rm.getOriginNodePosition());
             Node G = targetRoute.getRouteNodes().get(rm.getOriginNodePosition() + 1);
 
@@ -90,10 +90,10 @@ public class VehicleRoutingProblem {
             maxRoute.getTruck().setRemainingCap(maxRoute.getTruck().getRemainingCap() - B.getDemand());
             targetRoute.getTruck().setRemainingCap(targetRoute.getTruck().getRemainingCap() + B.getDemand()); 
 
-            maxRoute.setTotalRouteTimeInHrs(costChangeOrigin);
+            maxRoute.setTotalRouteTimeInHrs(costChangeOrigin);//set new total time of maxRoute
             targetRoute.setTotalRouteTimeInHrs(costChangeTarget);
-            maxRoute.getRouteNodes().remove(rm.getOriginNodePosition());
-            targetRoute.getRouteNodes().add(rm.getTargetNodePosition() + 1, B);
+            maxRoute.getRouteNodes().remove(rm.getOriginNodePosition());//remove node changed
+            targetRoute.getRouteNodes().add(rm.getTargetNodePosition() + 1, B);//add new position of node
 		}
 	}
 
@@ -136,7 +136,7 @@ public class VehicleRoutingProblem {
                     //final new cost
 		    double moveCost = costAdded - costRemoved;
                     double newRouteInHours = 0;
-                    
+                    //EFFIE
                     double costChangeOriginRoute = timeM[a.getNodeID()][c.getNodeID()] - (timeM[a.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][c.getNodeID()]);
                     double costChangeTargetRoute = timeM[insPoint1.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][insPoint2.getNodeID()] - timeM[insPoint1.getNodeID()][insPoint2.getNodeID()];
 
@@ -152,11 +152,11 @@ public class VehicleRoutingProblem {
                     double maxHoursOfRoute = CalculateMaxHoursInMove(newRouteInHours, newOldMaxRouteInHours, originRouteIndex, targetRouteIndex);
                     System.out.println("Max Route Hours of this relocation:" + maxHoursOfRoute);
                     if (maxHoursOfRoute < rm.getMaxRouteTime())
-                        rm.setOriginNodePosition(originNodeIndex);
-                        rm.setTargetNodePosition(targetNodeIndex);
+                        rm.setOriginNodePosition(originNodeIndex);//first position of node
+                        rm.setTargetNodePosition(targetNodeIndex);//EFFIE
                         rm.setTargetRoutePosition(targetRouteIndex);
-                        rm.setMaxRouteTime(maxHoursOfRoute);
-                        rm.setMoveCost(moveCost);
+                        rm.setMaxRouteTime(maxHoursOfRoute);//Time of route
+                        rm.setMoveCost(moveCost);//Cost of route when moved
                     }
                 }
 			}
