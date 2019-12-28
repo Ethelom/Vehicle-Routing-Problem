@@ -31,20 +31,21 @@ public class VehicleRoutingProblem {
         addDepositoryInEnd();//προσθήκη αποθήκης στο τέλος
         printFinalData();//τυπωνουμε
         boolean endMove = false;//για να δουμε ποτε τελειωνει
-        CalculateTimeWithoutReturnToDepo();//υπολογισμος χωρθς αποθηκη
+        CalculateTimeWithoutReturnToDepo();//υπολογισμος χωρις αποθηκη
         while (!endMove) {
         	RelocationMove rm = new RelocationMove();
         	applyBestRelocationMove(rm);
         	if (rm.getMoveCost() > -0.00001) {
-        		endMove = true;
+        		endMove = true;//δεν βρεθηκε στη γειτονια καμια καλυτερη λυση
         	} else {
         		ApplyMove(rm);
-        		calculateMaxRoute();
+        		calculateMaxRoute();//καθε φορα υπολογιζουμε ξανα το μαξ μιας και θα εχει αλλαξει
         		System.out.println(" Relocation: " + maxRoute.getTotalRouteTimeInHrs()+ "route:" + maxRoute.getRouteNodes().toString());
             }
         }
     }
-    
+    /*Στη μέθοδο αυτή αλλάζουμε το χρόνο της επιστροφής στην αποθήκη για κάθε σημείο σε 0 ώστε να μην επιβαρύνει τους υπολογισμούς μας
+    δηλαδή το objective*/
     private void CalculateTimeWithoutReturnToDepo() {
     	timeM = new double[totalServicePoints+1][totalServicePoints+1];//creation of a clone of timeMatrix
     	for (int i = 0; i < timeMatrix.length;i++) {
@@ -65,35 +66,35 @@ public class VehicleRoutingProblem {
 	private void ApplyMove(RelocationMove rm) {
 		if (rm.getMoveCost() == Double.MAX_VALUE) { //don't do anything if cost high
             return;
-663           }
-		Route targetRoute = routes.get(rm.getTargetRoutePosition());//ΕΦΗ
+          }
+		Route targetRoute = routes.get(rm.getTargetRoutePosition());//επιστρέφει τη διαδρομή που επιλέχθηκε να γίνει το relocation(προσοχη μπορει να είναι και η maxroute) 
 		Node B = maxRoute.getRouteNodes().get(rm.getOriginNodePosition());//node to change is now
 		if (maxRoute == targetRoute) {
 			maxRoute.getRouteNodes().remove(rm.getOriginNodePosition());
-            if (rm.getOriginNodePosition() < rm.getTargetNodePosition()) {//application of  node B to the correct position
-                targetRoute.getRouteNodes().add(rm.getTargetNodePosition(), B);
-            } else {
-                targetRoute.getRouteNodes().add(rm.getTargetNodePosition() + 1, B);
-            }
-            System.out.println("maxroute: "+maxRoute.getTotalRouteTimeInHrs());
-            maxRoute.setTotalRouteTimeInHrs(rm.getMoveCost());
+            		if (rm.getOriginNodePosition() < rm.getTargetNodePosition()) {//application of  node B to the correct position, χρειαζεται να το ελεγξω γιατι θα αλλάξει η σειρα
+                		targetRoute.getRouteNodes().add(rm.getTargetNodePosition(), B);
+            		} else {
+                		targetRoute.getRouteNodes().add(rm.getTargetNodePosition() + 1, B);
+            		}
+            		System.out.println("maxroute: "+maxRoute.getTotalRouteTimeInHrs());
+            		maxRoute.setTotalRouteTimeInHrs(rm.getMoveCost());
 		} else {
-            Node A = maxRoute.getRouteNodes().get(rm.getOriginNodePosition() - 1);//get previous node
-            Node C = maxRoute.getRouteNodes().get(rm.getOriginNodePosition() + 1);//get next node
-		//EFFIE
-            Node F = targetRoute.getRouteNodes().get(rm.getOriginNodePosition());
-            Node G = targetRoute.getRouteNodes().get(rm.getOriginNodePosition() + 1);
+            		Node A = maxRoute.getRouteNodes().get(rm.getOriginNodePosition() - 1);//get previous node
+            		Node C = maxRoute.getRouteNodes().get(rm.getOriginNodePosition() + 1);//get next node
+		//Eεδώ υπολογίζουμε τους κόμβους στην αλυσίδα Α,Β,C για τη μαξρουτ και F,G για τη διαδρομή με την οποία θα γίνει το relocation
+            		Node F = targetRoute.getRouteNodes().get(rm.getOriginNodePosition());
+            		Node G = targetRoute.getRouteNodes().get(rm.getOriginNodePosition() + 1);
+	    		/*τα κόστη αφορούν τη βελτίωση στο μαξ ρουτ και τη μεταβολη του κοστους στην διαδρομή που προσθέθηκε ο κόμβος Β*/
+            		double costChangeOrigin = timeM[A.getNodeID()][C.getNodeID()] - timeM[A.getNodeID()][B.getNodeID()] - timeM[B.getNodeID()][C.getNodeID()];
+            		double costChangeTarget = timeM[F.getNodeID()][B.getNodeID()] + timeM[B.getNodeID()][G.getNodeID()] - timeM[F.getNodeID()][G.getNodeID()];
+            		System.out.println(maxRoute.getTruck().getRemainingCap() - B.getDemand()+ ","+targetRoute.getTruck().getRemainingCap() + B.getDemand());
+            		maxRoute.getTruck().setRemainingCap(maxRoute.getTruck().getRemainingCap() - B.getDemand());
+            		targetRoute.getTruck().setRemainingCap(targetRoute.getTruck().getRemainingCap() + B.getDemand()); 
 
-            double costChangeOrigin = timeM[A.getNodeID()][C.getNodeID()] - timeM[A.getNodeID()][B.getNodeID()] - timeM[B.getNodeID()][C.getNodeID()];
-            double costChangeTarget = timeM[F.getNodeID()][B.getNodeID()] + timeM[B.getNodeID()][G.getNodeID()] - timeM[F.getNodeID()][G.getNodeID()];
-            System.out.println(maxRoute.getTruck().getRemainingCap() - B.getDemand()+ ","+targetRoute.getTruck().getRemainingCap() + B.getDemand());
-            maxRoute.getTruck().setRemainingCap(maxRoute.getTruck().getRemainingCap() - B.getDemand());
-            targetRoute.getTruck().setRemainingCap(targetRoute.getTruck().getRemainingCap() + B.getDemand()); 
-
-            maxRoute.setTotalRouteTimeInHrs(costChangeOrigin);//set new total time of maxRoute
-            targetRoute.setTotalRouteTimeInHrs(costChangeTarget);
-            maxRoute.getRouteNodes().remove(rm.getOriginNodePosition());//remove node changed
-            targetRoute.getRouteNodes().add(rm.getTargetNodePosition() + 1, B);//add new position of node
+            		maxRoute.setTotalRouteTimeInHrs(costChangeOrigin);//set new total time of maxRoute
+            		targetRoute.setTotalRouteTimeInHrs(costChangeTarget);
+            		maxRoute.getRouteNodes().remove(rm.getOriginNodePosition());//remove node changed
+            		targetRoute.getRouteNodes().add(rm.getTargetNodePosition() + 1, B);//add new position of node
 		}
 	}
 
@@ -153,7 +154,7 @@ public class VehicleRoutingProblem {
                     System.out.println("Max Route Hours of this relocation:" + maxHoursOfRoute);
                     if (maxHoursOfRoute < rm.getMaxRouteTime())
                         rm.setOriginNodePosition(originNodeIndex);//first position of node
-                        rm.setTargetNodePosition(targetNodeIndex);//EFFIE
+                        rm.setTargetNodePosition(targetNodeIndex);//το σημείο της αλυσίδας που θα γίνει το relocation(μπορει να είναι κα η ιδια αλυσιδα με μαξ ρουτ)
                         rm.setTargetRoutePosition(targetRouteIndex);
                         rm.setMaxRouteTime(maxHoursOfRoute);//Time of route
                         rm.setMoveCost(moveCost);//Cost of route when moved
@@ -163,7 +164,7 @@ public class VehicleRoutingProblem {
 		System.out.println(rm.getMaxRouteTime());
 		}
 	
-    
+    //η μεθοδος υπολογιζει καθε φορα που καλειται ποιο θα ηταν το νεο μαξ ρουτ αν γινει το relocation που εξεταζεται
     private double CalculateMaxHoursInMove(double newRouteInHours, double newOldMaxRouteInHours, int originRouteIndex,
 			int targetRouteIndex) {
 		double maxHours = newRouteInHours;
