@@ -52,7 +52,7 @@ public class VehicleRoutingProblem {
         SwapMove sm = new SwapMove();
         TwoOptMove top = new TwoOptMove();
         
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 10; i++) {
             InitializeOperators(rm, sm, top);
 
             int operatorType = 1;//DecideOperator();
@@ -65,15 +65,16 @@ public class VehicleRoutingProblem {
             } else if (operatorType == 2) {
                 FindBestTwoOptMove(top);
             }
-            
+            System.out.println("i has value" + i + "  new max route" + sm.getNewMaxRouteWithThisSwapMove());
             if (LocalOptimumHasBeenReached(operatorType, rm, sm, top)) {
+            	System.out.println("Time to break");
                 break;
             }
 
             //Apply move
             ApplyMove(operatorType, rm, sm, top);
             calculateMaxRoute();
-            System.out.println("2opt: " + maxRoute.getTotalRouteTimeInHrs()+ "route:" + maxRoute.getRouteNodes().toString() + "top.movecost:" +top.getMoveCost());
+            System.out.println("max route time: " + maxRoute.getTotalRouteTimeInHrs()+ "route:" + maxRoute.getRouteNodes().toString() + "sm.movecost:" +sm.getMoveCost());
         }
     }
     
@@ -96,9 +97,10 @@ public class VehicleRoutingProblem {
     }
     
     private void FindBestSwapMove(SwapMove sm) {
-        for (int firstRouteIndex = 0; firstRouteIndex < routes.size(); firstRouteIndex++) {
-            Route rt1 = routes.get(firstRouteIndex);
-            for (int secondRouteIndex = firstRouteIndex; secondRouteIndex < routes.size(); secondRouteIndex++) {
+        //for (int firstRouteIndex = 0; firstRouteIndex < routes.size(); firstRouteIndex++) {
+        	Route rt1 = maxRoute;//routes.get(firstRouteIndex);
+        	int firstRouteIndex = routes.indexOf(maxRoute); 
+            for (int secondRouteIndex = 0/*firstRouteIndex*/; secondRouteIndex < routes.size(); secondRouteIndex++) {
                 Route rt2 = routes.get(secondRouteIndex);
                 for (int firstNodeIndex = 1; firstNodeIndex < rt1.getRouteNodes().size() - 1; firstNodeIndex++) {
                     int startOfSecondNodeIndex = 1;
@@ -106,7 +108,7 @@ public class VehicleRoutingProblem {
                         startOfSecondNodeIndex = firstNodeIndex + 1;
                     }
                     for (int secondNodeIndex = startOfSecondNodeIndex; secondNodeIndex < rt2.getRouteNodes().size() - 1; secondNodeIndex++) {
-                        Node a1 = rt1.getRouteNodes().get(firstNodeIndex - 1);
+                    	Node a1 = rt1.getRouteNodes().get(firstNodeIndex - 1);
                         Node b1 = rt1.getRouteNodes().get(firstNodeIndex);
                         Node c1 = rt1.getRouteNodes().get(firstNodeIndex + 1);
 
@@ -115,17 +117,14 @@ public class VehicleRoutingProblem {
                         Node c2 = rt2.getRouteNodes().get(secondNodeIndex + 1);
 
                         double moveCost = Double.MAX_VALUE;
+                        double newMaxRouteInHours = Double.MAX_VALUE;
 
                         if (rt1 == rt2) // within route 
                         {
                             if (firstNodeIndex == secondNodeIndex - 1) {
                                 double costRemoved = timeM[a1.getNodeID()][b1.getNodeID()] + timeM[b1.getNodeID()][b2.getNodeID()] + timeM[b2.getNodeID()][c2.getNodeID()];
                                 double costAdded = timeM[a1.getNodeID()][b2.getNodeID()] + timeM[b2.getNodeID()][b1.getNodeID()] + timeM[b1.getNodeID()][c2.getNodeID()];
-                                moveCost = costAdded - costRemoved;
-//                                      BuilArcList(arcsDaysCreated, a1.uid, b2.uid, p, b2.uid, b1.uid, b1.uid, c2.uid);
-//                                      BuilArcList(arcsDaysDeleted, a1.uid, b1.uid, p, b1.uid, b2.uid, b2.uid, c2.uid);
-
-                                
+                                moveCost = costAdded - costRemoved;                                                 
                             } else {
                                 double costRemoved1 = timeM[a1.getNodeID()][b1.getNodeID()] + timeM[b1.getNodeID()][c1.getNodeID()];
                                 double costAdded1 = timeM[a1.getNodeID()][b2.getNodeID()] + timeM[b2.getNodeID()][c1.getNodeID()];
@@ -134,12 +133,10 @@ public class VehicleRoutingProblem {
                                 double costAdded2 = timeM[a2.getNodeID()][b1.getNodeID()] + timeM[b1.getNodeID()][c2.getNodeID()];
 
                                 moveCost = costAdded1 + costAdded2 - (costRemoved1 + costRemoved2);
-
-                                
                             }
-                        } else // between routes
+                            newMaxRouteInHours = maxRoute.getTotalRouteTimeInHrs() + moveCost;
+                        } else 
                         {
-                            //capacity constraints
                             if (- b1.getDemand() + b2.getDemand() > rt1.getTruck().getRemainingCap()) {
                                 continue;
                             }
@@ -152,32 +149,36 @@ public class VehicleRoutingProblem {
 
                             double costRemoved2 = timeM[a2.getNodeID()][b2.getNodeID()] + timeM[b2.getNodeID()][c2.getNodeID()];
                             double costAdded2 = timeM[a2.getNodeID()][b1.getNodeID()] + timeM[b1.getNodeID()][c2.getNodeID()];
-
+                            double costOfFirstTotalTime =  (rt1.getTotalRouteTimeInHrs() + costAdded1 - costRemoved1);
+                            double costOfSecondTotalTime =  (rt2.getTotalRouteTimeInHrs() + costAdded2 - costRemoved2);
+                            if (costOfFirstTotalTime >= costOfSecondTotalTime) {
+                            	newMaxRouteInHours = costOfFirstTotalTime;
+                            } else {
+                            	newMaxRouteInHours = costOfSecondTotalTime;
+                            }
                             moveCost = costAdded1 + costAdded2 - (costRemoved1 + costRemoved2);
-//                          BuilArcList(arcsDaysCreated, a1.uid, b2.uid, p, b2.uid, c1.uid, p, a2.uid, b1.uid, p, b1.uid, c2.uid);
-//                          BuilArcList(arcsDaysDeleted, a1.uid, b1.uid, p, b1.uid, c1.uid, p, a2.uid, b2.uid, p, b2.uid, c2.uid);
-
-                           
                         }
-                        StoreBestSwapMove(firstRouteIndex, secondRouteIndex, firstNodeIndex, secondNodeIndex, moveCost, sm);
+                        StoreBestSwapMove(firstRouteIndex, secondRouteIndex, firstNodeIndex, secondNodeIndex, moveCost, newMaxRouteInHours, sm);
                     }
                 }
             }
         }
-    }
+    
 
-    private void StoreBestSwapMove(int firstRouteIndex, int secondRouteIndex, int firstNodeIndex, int secondNodeIndex, double moveCost, SwapMove sm) {
-        if (moveCost < sm.getMoveCost()) {
+    private void StoreBestSwapMove(int firstRouteIndex, int secondRouteIndex, int firstNodeIndex, int secondNodeIndex, double moveCost, double newMaxRouteInHours, SwapMove sm) {
+        if (newMaxRouteInHours < sm.getNewMaxRouteWithThisSwapMove()) {
             sm.setFirstRoutePosition(firstRouteIndex);
             sm.setFirstNodePosition(firstNodeIndex);
             sm.setSecondRoutePosition(secondRouteIndex);
             sm.setSecondNodePosition(secondNodeIndex);
             sm.setMoveCost(moveCost);
+            sm.setNewMaxRouteWithThisSwapMove(newMaxRouteInHours);
+            System.out.println(sm.getNewMaxRouteWithThisSwapMove());
         }
     }
     
     
-    private void ApplySwapMove(SwapMove sm, Solution sol) {
+    private void ApplySwapMove(SwapMove sm) {
         if (sm.getMoveCost() == Double.MAX_VALUE) {
             return;
         }
@@ -186,10 +187,11 @@ public class VehicleRoutingProblem {
         Route secondRoute = routes.get(sm.getSecondRoutePosition());
 
         if (firstRoute == secondRoute) {
-            if (sm.getFirstRoutePosition() == sm.getSecondRoutePosition() - 1) {
+        	System.out.println("Equal Routes .Applying swap move");
+        	if (sm.getFirstRoutePosition() == sm.getSecondRoutePosition() - 1) {
+        		System.out.println("Next position");
                 Node A = firstRoute.getRouteNodes().get(sm.getFirstNodePosition());
                 Node B = firstRoute.getRouteNodes().get(sm.getFirstNodePosition() + 1);
-
                 firstRoute.getRouteNodes().set(sm.getFirstNodePosition(), B);
                 firstRoute.getRouteNodes().set(sm.getFirstNodePosition() + 1, A);
 
@@ -202,6 +204,7 @@ public class VehicleRoutingProblem {
             }
             firstRoute.setTotalRouteTimeInHrs(sm.getMoveCost());
         } else {
+        	System.out.println("Not Equal Routes .Applying swap move");
             Node A = firstRoute.getRouteNodes().get(sm.getFirstNodePosition() - 1);
             Node B = firstRoute.getRouteNodes().get(sm.getFirstNodePosition());
             Node C = firstRoute.getRouteNodes().get(sm.getFirstNodePosition() + 1);
@@ -216,8 +219,8 @@ public class VehicleRoutingProblem {
             firstRoute.setTotalRouteTimeInHrs(costChangeFirstRoute);
             secondRoute.setTotalRouteTimeInHrs(costChangeSecondRoute);
 
-            firstRoute.setTotalRouteTimeInHrs( F.getDemand() - B.getDemand());
-            secondRoute.setTotalRouteTimeInHrs( B.getDemand() - F.getDemand());
+            firstRoute.getTruck().setRemainingCap(F.getDemand() - B.getDemand());
+            secondRoute.getTruck().setRemainingCap(B.getDemand() - F.getDemand());
 
             firstRoute.getRouteNodes().set(sm.getFirstNodePosition(), F);
             secondRoute.getRouteNodes().set(sm.getSecondNodePosition(), B);
@@ -245,11 +248,6 @@ public class VehicleRoutingProblem {
         }
     }
 
-    
-    private void ApplySwapMove(SwapMove sm) {
-		// TODO Auto-generated method stub
-		
-	}
 
 	private void FindBestTwoOptMove(TwoOptMove top) {
         for (int rtInd1 = 0; rtInd1 < routes.size(); rtInd1++) {
@@ -267,7 +265,7 @@ public class VehicleRoutingProblem {
                     for (int nodeInd2 = start2; nodeInd2 < rt2.getRouteNodes().size() - 1; nodeInd2++) 
                     {
                         double moveCost = Double.MAX_VALUE;
-
+                        
                         if (rt1 == rt2) {
                             Node A = rt1.getRouteNodes().get(nodeInd1);
                             Node B = rt1.getRouteNodes().get(nodeInd1 + 1);
@@ -528,9 +526,9 @@ public class VehicleRoutingProblem {
 			//cost added is the cost the new route has
                     double costAdded = timeM[a.getNodeID()][c.getNodeID()] + timeM[insPoint1.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][insPoint2.getNodeID()];
                     //cost removed is the removal of the old's route cost
-		    double costRemoved = timeM[a.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][c.getNodeID()] + timeM[insPoint1.getNodeID()][insPoint2.getNodeID()];
+                    double costRemoved = timeM[a.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][c.getNodeID()] + timeM[insPoint1.getNodeID()][insPoint2.getNodeID()];
                     //final new cost
-		    double moveCost = costAdded - costRemoved;
+                    double moveCost = costAdded - costRemoved;
                     double newRouteInHours = 0;
                     
                     double costChangeOriginRoute = timeM[a.getNodeID()][c.getNodeID()] - (timeM[a.getNodeID()][b.getNodeID()] + timeM[b.getNodeID()][c.getNodeID()]);
@@ -818,7 +816,7 @@ public class VehicleRoutingProblem {
 
     public static void main(String[] args) {
         long start = System.currentTimeMillis();
-        new VehicleRoutingProblem(200, 25);
+        new VehicleRoutingProblem(200,25);
         long end = System.currentTimeMillis();
         float duration = (end - start) / 1000F;
         System.out.println();
