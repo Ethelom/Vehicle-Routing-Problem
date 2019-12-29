@@ -8,6 +8,15 @@ public class SwapMove {
     private int secondNodePosition;
 
     private double moveCost;
+    private double newMaxRouteWithThisSwapMove = Double.MAX_VALUE;
+
+	public double getNewMaxRouteWithThisSwapMove() {
+		return newMaxRouteWithThisSwapMove;
+	}
+
+	public void setNewMaxRouteWithThisSwapMove(double newMaxRouteWithThisSwapMove) {
+		this.newMaxRouteWithThisSwapMove = newMaxRouteWithThisSwapMove;
+	}
 
 	public int getFirstRoutePosition() {
 		return firstRoutePosition;
