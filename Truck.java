@@ -1,15 +1,14 @@
-
+package thodisis;
 
 public class Truck {
 
     private int truckID, remainingCap;
     public static final int speedKMH = 35;
-    private Node currentNode;
+
 
     public Truck(Node startingNode) {
         this.truckID = VehicleRoutingProblem.truckCounter.incrementAndGet();
         this.remainingCap = 3000;
-        this.currentNode = startingNode;
     }
 
     public int getTruckID() {
@@ -28,12 +27,5 @@ public class Truck {
         this.remainingCap = remainingCap;
     }
 
-    public Node getCurrentNode() {
-        return currentNode;
-    }
-
-    public void setCurrentNode(Node currentNode) {
-        this.currentNode = currentNode;
-    }
-
 }
+

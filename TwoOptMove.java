@@ -1,3 +1,5 @@
+package thodisis;
+
 
 public class TwoOptMove {
 	private int positionOfFirstRoute;

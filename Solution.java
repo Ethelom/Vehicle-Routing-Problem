@@ -1,3 +1,5 @@
+package thodisis;
+
 
 public class Solution {
 	private Node node;
@@ -30,3 +32,4 @@ public class Solution {
 	
 
 }
+

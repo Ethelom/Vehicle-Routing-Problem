@@ -1,3 +1,5 @@
+package thodisis;
+
 import java.util.ArrayList;
 
 public class Route {
@@ -16,14 +18,31 @@ public class Route {
         this.finalised = false;
     }
 
-    public void addNodeToRoute(Node node, int position) {
-        routeNodes.add(position + 1, node);
-        //TODO increase totalRouteTimeInHrs
+    public boolean equals(Route otherRoute) {
+        return this.routeID == otherRoute.getRouteID();
     }
-    
+
+    public int getRouteSize() {
+        return routeNodes.size();
+    }
+
     public void addNodeToRoute(Node node) {
         routeNodes.add(node);
+        node.updateServiceStatus(true);
         //TODO increase totalRouteTimeInHrs
+    }
+
+    public Node getCurrentNode() {
+        return routeNodes.get(routeNodes.size() - 1);
+    }
+
+    public void updateCap(Node addedNode) {
+        int cap = truck.getRemainingCap();
+        truck.setRemainingCap(cap - addedNode.getDemand());
+    }
+
+    public void updateTotalRouteTime(double cost, Node node) {
+        setTotalRouteTimeInHrs(getTotalRouteTimeInHrs() + cost + node.getServicetime());
     }
 
     public int getRouteID() {
@@ -54,12 +73,8 @@ public class Route {
         return totalRouteTimeInHrs;
     }
 
-    public void setTotalRouteTimeInHrs(double addTimeInHrs) {
-        this.totalRouteTimeInHrs += addTimeInHrs;
-    }
-    
-    public void setTotalTimeFromScratch(double newTime) {
-    	this.totalRouteTimeInHrs = newTime;
+    public void setTotalRouteTimeInHrs(double totalRouteTimeInHrs) {
+        this.totalRouteTimeInHrs = totalRouteTimeInHrs;
     }
 
     public boolean isFinalised() {
@@ -68,10 +83,5 @@ public class Route {
 
     public void setFinalised(boolean finalised) {
         this.finalised = finalised;
-    }
-    
-    @Override
-    public String toString() {
-    	return "route ID:"+routeID;
     }
 }
